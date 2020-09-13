@@ -1,1 +1,1 @@
-# git-commit-plugin
+# org.master.git-commit-plugin
