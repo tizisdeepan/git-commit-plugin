@@ -1,0 +1,17 @@
+<idea-plugin>
+    <id>org.master.git.git-commit-master</id>
+    <name>Git Master</name>
+    <vendor email="tizisdeepan@gmail.com" url="https://github.com/tizisdeepan/git-commit-plugin">Git Master</vendor>
+
+    <!-- please see https://www.jetbrains.org/intellij/sdk/docs/basics/getting_started/plugin_compatibility.html
+         on how to target different products -->
+    <depends>com.intellij.modules.platform</depends>
+
+    <extensions defaultExtensionNs="com.intellij">
+        <!-- Add your extensions here -->
+    </extensions>
+
+    <actions>
+        <!-- Add your actions here -->
+    </actions>
+</idea-plugin>
