@@ -18,7 +18,7 @@
         <!-- Add your actions here -->
         <action id="org.master.git.GitMasterAction" class="org.master.git.GitMasterAction" text="Git Master"
                 description="Generates a commit message template">
-            <add-to-group group-id="ToolsMenu" anchor="first"/>
+            <add-to-group group-id="VersionControlsGroup" anchor="first"/>
             <keyboard-shortcut keymap="$default" first-keystroke="control meta M" second-keystroke="control meta M"/>
         </action>
     </actions>

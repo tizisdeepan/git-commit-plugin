@@ -5,13 +5,11 @@ import com.google.gson.reflect.TypeToken
 import com.intellij.ide.util.PropertiesComponent
 import com.intellij.openapi.ui.DialogWrapper
 import com.intellij.ui.layout.panel
-import java.awt.BorderLayout
 import java.awt.Component
 import javax.swing.BoxLayout
 import javax.swing.JComponent
 import javax.swing.JPanel
 import javax.swing.JScrollPane
-
 
 class GitMasterDialog : DialogWrapper(true) {
 

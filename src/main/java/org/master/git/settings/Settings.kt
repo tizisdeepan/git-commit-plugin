@@ -4,20 +4,28 @@ import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import com.intellij.ide.util.PropertiesComponent
 import com.intellij.openapi.options.Configurable
-import com.intellij.openapi.project.Project
-import com.intellij.ui.JBSplitter
+import com.intellij.ui.ToolbarDecorator
 import com.intellij.ui.components.JBScrollPane
 import com.intellij.ui.layout.panel
 import com.intellij.ui.table.JBTable
+import org.master.git.AddItemDialog
 import org.master.git.ItemModel
-import java.awt.event.ItemEvent
-import javax.swing.*
+import java.awt.BorderLayout
+import java.util.*
+import javax.swing.JComponent
+import javax.swing.JPanel
+import javax.swing.ListSelectionModel
 import javax.swing.event.DocumentEvent
 import javax.swing.event.DocumentListener
+import javax.swing.event.ListSelectionListener
 import javax.swing.table.DefaultTableModel
+import javax.swing.table.JTableHeader
+import kotlin.collections.ArrayList
 
 
-class Settings(private val project: Project) : Configurable, DocumentListener {
+class Settings : Configurable, DocumentListener {
+
+    private val configTable = JBTable()
 
     var dtm = object : DefaultTableModel() {
         override fun isCellEditable(row: Int, column: Int): Boolean = false
@@ -25,24 +33,40 @@ class Settings(private val project: Project) : Configurable, DocumentListener {
 
     private var modified = true
 
-    var column = arrayOf("NAME", "TYPE", "VALUE")
-    var items: ArrayList<ItemModel> = ArrayList()
+    var column = arrayOf("NAME", "TYPE", "VARIABLE", "VALUE")
 
     override fun createComponent(): JComponent? {
         val config = PropertiesComponent.getInstance()
-        val itemsJson = config.getValue("ITEMS_JSON", Gson().toJson(items).toString())
-        items = Gson().fromJson(itemsJson, object : TypeToken<ArrayList<ItemModel>>() {}.type)
+        val itemsJson = config.getValue("ITEMS_JSON", Gson().toJson(ArrayList<ItemModel>()).toString())
+        val items: ArrayList<ItemModel> = Gson().fromJson(itemsJson, object : TypeToken<ArrayList<ItemModel>>() {}.type)
 
         val scroll = JBScrollPane()
-        val configTable = JBTable()
 
         configTable.rowSelectionAllowed = true
-        configTable.model = dtm
+        configTable.setSelectionMode(ListSelectionModel.SINGLE_SELECTION)
+
+        val tableHeader = JTableHeader()
+        tableHeader.table = configTable
+        val panel = JPanel()
+        panel.layout = BorderLayout()
+        panel.add(tableHeader, BorderLayout.NORTH)
+        panel.add(configTable, BorderLayout.CENTER)
         dtm.setColumnIdentifiers(column)
+        configTable.model = dtm
 
-        scroll.add(configTable)
+        configTable.selectionModel.addListSelectionListener(ListSelectionListener { event ->
+            if (event.valueIsAdjusting) return@ListSelectionListener
+        })
 
-        val addPanel = createAddPanel()
+        val tableToolbarDecorator: ToolbarDecorator = ToolbarDecorator.createDecorator(configTable).setAddAction {
+            AddItemDialog(getCurrentItems(), this::addRow).show()
+        }.setRemoveAction {
+            dtm.removeRow(configTable.selectedRow)
+        }.setRemoveActionUpdater { configTable.selectedRow != -1 }.disableUpDownActions()
+
+        val panelTable = tableToolbarDecorator.createPanel()
+
+        scroll.add(panelTable)
 
         if (items.isNotEmpty()) {
             for (i in 0 until items.size) {
@@ -53,75 +77,38 @@ class Settings(private val project: Project) : Configurable, DocumentListener {
         return panel {
             noteRow("Customize the list of templates to be included in the Git Master View")
             row {
-                configTable(grow)
-            }
-            row {
-                addPanel(grow)
+                panelTable(grow)
             }
         }
     }
 
     private fun createValueRow(itemModel: ItemModel) {
-        dtm.addRow(arrayOf(itemModel.name, itemModel.type, itemModel.label))
+        dtm.addRow(arrayOf(itemModel.name, itemModel.type, itemModel.variableName, itemModel.label))
     }
 
     private fun addRow(itemModel: ItemModel) {
-        items.add(itemModel)
-        dtm.addRow(arrayOf(itemModel.name, itemModel.type, itemModel.label))
+        dtm.addRow(arrayOf(itemModel.name, itemModel.type, itemModel.variableName, itemModel.label))
     }
 
-    private fun createAddPanel(): JPanel {
-        val typeField = JComboBox(arrayOf(ItemModel.TEXT, ItemModel.OPTIONS))
-        val optionsLabel = JLabel("Add items comma separated (eg:Bug,Task,Issue)")
-        val optionsField = JTextField("")
-        optionsLabel.isVisible = false
-        optionsField.isVisible = false
-        val nameField = JTextField("")
-        val panel = panel {
-            row {
-                label("Name")
-                nameField(grow)
-            }
-            row {
-                label("Type")
-                typeField(grow)
-            }
-            row {
-                optionsLabel(grow)
-                optionsField(grow)
-            }
-            row {
-                label("")
-                label("")
-                right {
-                    button("Add") {
-                        addRow(ItemModel(nameField.text, typeField.selectedItem as String, optionsField.text))
-                    }
-                }
-            }
+    private fun getCurrentItems(): List<ItemModel> {
+        val currentItems: ArrayList<ItemModel> = ArrayList()
+        val vector = dtm.dataVector
+        for (i in 0 until dtm.rowCount) {
+            val name = ((vector.elementAt(i) as? Vector<*>)?.elementAt(0) as? String) ?: ""
+            val type = ((vector.elementAt(i) as? Vector<*>)?.elementAt(1) as? String) ?: ""
+            val variable = ((vector.elementAt(i) as? Vector<*>)?.elementAt(2) as? String) ?: ""
+            val value = ((vector.elementAt(i) as? Vector<*>)?.elementAt(3) as? String) ?: ""
+            currentItems.add(ItemModel(name, type, variable, value))
         }
-        typeField.addItemListener {
-            if (it.stateChange == ItemEvent.SELECTED) {
-                when (it.item as? String) {
-                    ItemModel.OPTIONS -> {
-                        optionsLabel.isVisible = true
-                        optionsField.isVisible = true
-                    }
-                    else -> {
-                        optionsLabel.isVisible = false
-                        optionsField.isVisible = false
-                    }
-                }
-            }
-        }
-        return panel
+        println(currentItems.toString())
+        return currentItems
     }
 
     override fun isModified(): Boolean = modified
 
     override fun apply() {
         val config = PropertiesComponent.getInstance()
-        config.setValue("ITEMS_JSON", Gson().toJson(items).toString())
+        config.setValue("ITEMS_JSON", Gson().toJson(getCurrentItems()).toString())
         modified = false
     }
 
