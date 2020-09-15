@@ -101,7 +101,7 @@ class Settings : Configurable, DocumentListener {
                 panelTable(grow)
             }
             row {
-                noteRow("Write your own template by using the variable names created above enclosed within \${variableName}\nEg: [\${type}] - [\${issueName}] [\${environment}]: \${commitMessage}")
+                noteRow("Write your own template by using the variable names created above enclosed within \$variableName\nEg: [\$type] - [\$issueName] [\$environment]: \$commitMessage")
             }
             row {
                 templateArea(grow)
